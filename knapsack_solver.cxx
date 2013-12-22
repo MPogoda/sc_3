@@ -1,19 +1,18 @@
 #include "knapsack_solver.h"
-#include "knapsack.h"
 #include <algorithm>
 #include <iterator>
 #include <iostream>
 
 namespace sc3
 {
-KnapsackSolver::KnapsackSolver( const KnapsackProblem& problem, const uint64_t pop_size )
+KnapsackSolver::KnapsackSolver( KnapsackProblem problem, const uint64_t pop_size )
     : population_size_{ pop_size }
     , recombination_probability_{ 70 }
-    , mutatuion_probability_{ 2 }
+    , mutation_probability_{ 2 }
     , max_generations_{ 100 }
     , max_generations_without_improvement_{ 25 }
     , two_point_crossover_{ false }
-    , problem_( problem )
+    , problem_( std::move( problem  ) )
     , population_( population_size_, problem_ )
 {
 }
@@ -51,6 +50,33 @@ KnapsackSolver::do_crossover(const KnapsackSolution& parent1, const KnapsackSolu
     KnapsackSolution::Genome genome2( problem_.items.size() );
 
     if (two_point_crossover_) {
+        uint64_t pointA = dist(engine);
+        uint64_t pointB = dist(engine);
+        if (pointA > pointB) std::swap( pointA, pointB );
+
+        auto& parent1genome = parent1.genome();
+        auto& parent2genome = parent2.genome();
+
+        auto parent1A = parent1genome.begin(); std::advance( parent1A, pointA );
+        auto parent2A = parent2genome.begin(); std::advance( parent2A, pointA );
+
+        auto parent1B = parent1genome.begin(); std::advance( parent1B, pointB );
+        auto parent2B = parent2genome.begin(); std::advance( parent2B, pointB );
+
+
+        auto offspring1A = genome1.begin(); std::advance( offspring1A, pointA );
+        auto offspring2A = genome2.begin(); std::advance( offspring2A, pointA );
+
+        auto offspring1B = genome1.begin(); std::advance( offspring1B, pointB );
+        auto offspring2B = genome2.begin(); std::advance( offspring2B, pointB );
+
+        std::copy( parent1genome.begin(), parent1A, genome1.begin() );
+        std::copy( parent2A, parent2B, offspring1A );
+        std::copy( parent1B, parent1genome.end(), offspring1B );
+
+        std::copy( parent2genome.begin(), parent2A, genome2.begin() );
+        std::copy( parent1A, parent1B, offspring2A );
+        std::copy( parent2B, parent2genome.end(), offspring2B );
     } else {
         uint64_t crossover_point = dist( engine );
 
@@ -64,10 +90,10 @@ KnapsackSolver::do_crossover(const KnapsackSolution& parent1, const KnapsackSolu
         auto offIter2cr = genome2.begin(); std::advance( offIter2cr, crossover_point );
 
         std::copy( parent1genome.begin(), parIter1end, genome1.begin() );
-        std::copy( parIter2end, parent2genome.end(), genome1.begin() );
+        std::copy( parIter2end, parent2genome.end(), offIter1cr );
 
         std::copy( parent2genome.begin(), parIter2end, genome2.begin() );
-        std::copy( parIter1end, parent1genome.end(), genome2.begin() );
+        std::copy( parIter1end, parent1genome.end(), offIter2cr );
     }
 
     return std::make_pair( KnapsackSolution( problem_, std::move( genome1 ) )
@@ -99,13 +125,24 @@ KnapsackSolver::Population KnapsackSolver::next_generation() const
 {
     Population new_population{};
     while( new_population.size() < population_size_ ) {
-        auto offsrpings = get_offspring();
+        auto offsprings = get_offspring();
 
-        new_population.emplace_back( std::move( offsrpings.first ) );
-        new_population.emplace_back( std::move( offsrpings.second ) );
+        {
+            auto& solution = offsprings.first;
+            solution.mutate( mutation_probability_ );
+            if (solution.fitness() > 0)
+                new_population.emplace_back( std::move( solution ) );
+        }
+
+        {
+            auto& solution = offsprings.second;
+            solution.mutate( mutation_probability_ );
+            if (solution.fitness() > 0)
+                new_population.emplace_back( std::move( solution ) );
+        }
     }
 
-    if (new_population.size() > population_size_ )
+    while (new_population.size() > population_size_ )
         new_population.pop_back();
 
     return std::move( new_population );
@@ -114,10 +151,6 @@ KnapsackSolver::Population KnapsackSolver::next_generation() const
 KnapsackSolution KnapsackSolver::evolve()
 {
     next_generation().swap( population_ );
-
-    for (auto& solution : population_ ) {
-        solution.mutate( mutatuion_probability_ );
-    }
 
     return current_best();
 }
@@ -152,9 +185,10 @@ KnapsackSolution KnapsackSolver::run()
 
         auto worst = current_worst().fitness();
 
-        std::cout << "Best: " << best.fitness() << "; ";
-        std::cout << "Avg:  " << avg_fitness << "; ";
-        std::cout << "Worst: " << worst << std::endl;
+        std::cout << "Population #" << generation_count_ << '\t';
+        std::cout << "Best: " << best.fitness() << '\t';
+        std::cout << "Avg: " << avg_fitness << '\t';
+        std::cout << "Worst: " << worst << '\n';
 
         ++generation_count_;
     }
@@ -162,4 +196,30 @@ KnapsackSolution KnapsackSolver::run()
     return std::move( best );
 }
 
+void KnapsackSolver::set_two_point_crossover( const bool value )
+{
+    two_point_crossover_ = value;
+}
+
+void KnapsackSolver::set_population_size( uint64_t value )
+{
+    population_size_ = value;
+}
+
+void KnapsackSolver::set_recombination_probability( uint64_t value )
+{
+    recombination_probability_ = value;
+}
+void KnapsackSolver::set_mutation_probability( uint64_t value )
+{
+    mutation_probability_ = value;
+}
+void KnapsackSolver::set_max_generations( uint64_t value )
+{
+    max_generations_ = value;
+}
+void KnapsackSolver::set_max_generations_without_improvement( uint64_t value )
+{
+    max_generations_without_improvement_ = value;
+}
 } // namespace sc3

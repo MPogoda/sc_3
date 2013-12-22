@@ -1,9 +1,11 @@
 #include "knapsack.h"
 #include <cassert>
 #include <random>
+#include <algorithm>
 
 namespace sc3
 {
+
 KnapsackSolution::KnapsackSolution( const KnapsackProblem& problem )
     : genome_( problem.items.size() )
     , problem_( problem )
@@ -17,36 +19,28 @@ KnapsackSolution::KnapsackSolution( const KnapsackProblem& problem )
         gene = static_cast< bool>( dist( engine ) );
     }
 
-    update_fitness();
+    fit();
+    fitness_ = calculate_fitness();
 }
 
 KnapsackSolution::KnapsackSolution( const KnapsackProblem& problem, KnapsackSolution::Genome&& genome )
     : genome_( genome )
     , problem_( problem )
-    , fitness_{ calculate_fitness() }
+    , fitness_{ 0 }
 {
+    fit();
+    fitness_ = calculate_fitness();
 }
 
 KnapsackSolution::Fitness KnapsackSolution::calculate_fitness() const
 {
-    Fitness result{};
-    uint64_t cost;
+    Fitness result{ 0 };
 
     for (int i = 0; i < genome_.size(); ++i) {
         result += genome_[ i ] * problem_.items[ i ].value;
-        cost  += genome_[ i ] * problem_.items[ i ].cost;
-    }
-
-    if (cost > problem_.max_cost ) {
-        result = std::numeric_limits< Fitness >::min();
     }
 
     return result;
-}
-
-void KnapsackSolution::update_fitness()
-{
-    fitness_ = calculate_fitness();
 }
 
 const KnapsackSolution::Genome& KnapsackSolution::genome() const
@@ -75,7 +69,8 @@ void KnapsackSolution::mutate( const uint64_t mutation_probability)
             gene = !gene;
     }
 
-    update_fitness();
+    fit();
+    fitness_ = calculate_fitness();
 }
 
 void KnapsackSolution::swap( KnapsackSolution& other )
@@ -86,4 +81,35 @@ void KnapsackSolution::swap( KnapsackSolution& other )
     std::swap( fitness_, other.fitness_ );
 }
 
+void KnapsackSolution::fit()
+{
+    // calculate cost
+    uint64_t cost{ 0 };
+    for (int i = 0; i < genome_.size(); ++i) {
+        cost  += genome_[ i ] * problem_.items[ i ].cost;
+    }
+
+    // remove gene with lowest (value/cost) ratio
+    // until total cost will be acceptable
+    uint64_t it{ 0 };
+    const uint64_t endIt = genome_.size();
+    while (cost > problem_.max_cost ) {
+        for ( ; !genome_[it] && (endIt != it); ++it)
+            ;
+
+        if (endIt == it) assert( false );
+        genome_[ it ] = false;
+        cost -= problem_.items[ it ].cost;
+        ++it;
+    }
+
+}
+
+bool operator<( const KnapsackItem& lhs, const KnapsackItem& rhs)
+{
+    long double lhsv = static_cast< long double >( lhs.value )/ static_cast< long double >(lhs.cost );
+    long double rhsv = static_cast< long double >( rhs.value )/ static_cast< long double >( rhs.cost );
+
+    return lhsv < rhsv;
+}
 } // namespace sc3
