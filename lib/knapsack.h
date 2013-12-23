@@ -14,6 +14,8 @@ struct KnapsackItem
 // compares (value / cost) of two items.
 bool operator<( const KnapsackItem& lhs, const KnapsackItem& rhs );
 
+using KnapsackItemsDeque = std::deque< KnapsackItem >;
+
 struct KnapsackProblem
 {
     std::deque< KnapsackItem > items; // expect items to be sorted

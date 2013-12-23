@@ -14,7 +14,6 @@ file( GLOB SOURCES "*.cpp" )
 add_subdirectory( "lib" )
 
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
-
 qt4_wrap_ui( mainWindowFORM "mainwindow.ui" )
 
 add_executable( GAKnapsack ${SOURCES} ${mainWindowFORM} )

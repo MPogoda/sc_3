@@ -28,8 +28,6 @@ KnapsackSolution::KnapsackSolution( const KnapsackProblem& problem, KnapsackSolu
     , problem_( problem )
     , fitness_{ 0 }
 {
-    fit();
-    fitness_ = calculate_fitness();
 }
 
 KnapsackSolution::Fitness KnapsackSolution::calculate_fitness() const
