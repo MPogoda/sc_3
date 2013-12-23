@@ -19,6 +19,10 @@ class MainWindow : public QMainWindow
     
 public:
     explicit MainWindow(QWidget *parent = 0);
+
+    void displayPreset( const KnapsackItemsDeque& items );
+    void displayKnapsackSolution( const KnapsackSolution& solution );
+
     ~MainWindow();
     
 private slots:
@@ -32,7 +36,7 @@ private:
     QStandardItemModel *model;
     KnapsackItemsDeque mItems;
 
-    void displayPreset( const KnapsackItemsDeque& items );
+    KnapsackItemsDeque genotypeToPhenotype( const KnapsackSolution::Genome& genotype );
 };
 } //sc3 namespace
 #endif // MAINWINDOW_H
