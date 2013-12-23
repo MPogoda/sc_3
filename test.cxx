@@ -1,5 +1,5 @@
-#include "knapsack.h"
-#include "knapsack_solver.h"
+#include "lib/knapsack.h"
+#include "lib/knapsack_solver.h"
 #include <iostream>
 #include <algorithm>
 

@@ -2,10 +2,20 @@ project( knapsack )
 
 cmake_minimum_required( VERSION 2.8.6 )
 
+set( CMAKE_AUTOMOC true )
+
+find_package( Qt4 REQUIRED QtGui QtCore )
+
+include( ${QT_USE_FILE} )
+
 add_definitions( -std=c++0x )
-file( GLOB knapsack_SRCS "knapsack*.cxx" )
 
-add_library( knapsack SHARED ${knapsack_SRCS} )
+file( GLOB SOURCES "*.cpp" )
+add_subdirectory( "lib" )
 
-add_executable( test "test.cxx" )
-target_link_libraries( test knapsack )
+include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
+
+qt4_wrap_ui( mainWindowFORM "mainwindow.ui" )
+
+add_executable( GAKnapsack ${SOURCES} ${mainWindowFORM} )
+target_link_libraries( GAKnapsack ${QT_LIBRARIES} knapsack )
